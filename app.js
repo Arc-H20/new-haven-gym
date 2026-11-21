@@ -1,6 +1,6 @@
 "use strict";
 const L = self.GymLib, S = self.Store;
-const APP_VERSION = "1.0.2";
+const APP_VERSION = "1.0.3";
 const $ = (sel, el = document) => el.querySelector(sel);
 
 // h("div.cls#id", {attrs, onclick}, ...children)
@@ -222,19 +222,19 @@ VIEWS.home = () => {
   const monthIso = nowIso.slice(0, 8) + "01";
   const bests = countBests(monthIso);
 
-  // Training map: 9 columns (weeks, oldest left), 7 rows Mon..Sun.
+  // Training map: one row per week (oldest at top), days Mon..Sun across, like a calendar.
   const trained = new Set(ctx.sessions.map(s => s.date));
   const start = new Date(wk); start.setDate(start.getDate() - 7 * 8);
-  const cells = []; const monthMarks = [];
+  const cells = [h("span"), ...["M", "T", "W", "T", "F", "S", "S"].map(x => h("span.heat-d", x))];
   for (let w = 0; w < 9; w++) {
-    const col = new Date(start); col.setDate(col.getDate() + w * 7);
-    monthMarks.push(col.getDate() <= 7 || w === 0 ? L.MONTHS[col.getMonth()] : "");
-  }
-  for (let r = 0; r < 7; r++) for (let w = 0; w < 9; w++) {
-    const day = new Date(start); day.setDate(day.getDate() + w * 7 + r);
-    const iso = L.isoDate(day);
-    const cls = iso > nowIso ? ".x" : trained.has(iso) ? ".f" : "";
-    cells.push(h("i" + cls + (iso === nowIso ? ".today" : ""), { title: L.prettyDate(iso) + (trained.has(iso) ? " · trained" : "") }));
+    const mon = new Date(start); mon.setDate(mon.getDate() + w * 7);
+    cells.push(h("span.heat-mo", mon.getDate() <= 7 || w === 0 ? L.MONTHS[mon.getMonth()] : ""));
+    for (let r = 0; r < 7; r++) {
+      const day = new Date(mon); day.setDate(day.getDate() + r);
+      const iso = L.isoDate(day);
+      const cls = iso > nowIso ? ".x" : trained.has(iso) ? ".f" : "";
+      cells.push(h("i" + cls + (iso === nowIso ? ".today" : ""), { title: L.prettyDate(iso) + (trained.has(iso) ? " · trained" : "") }));
+    }
   }
   const count9 = ctx.sessions.filter(s => s.date >= L.isoDate(start)).length;
 
@@ -251,8 +251,7 @@ VIEWS.home = () => {
     h("header.home-top", svg(LOGO, "home-logo"), h("span.grow"), h("span.dim.small", L.prettyDate(nowIso))),
     ctx.hasData ? null : h("div.callout", "No routines or exercises found in the repo yet. Check Settings."),
     h("section.map", h("div.rowx", h("span.grow.strong", "Last 9 weeks"), h("span.dim.small", `${count9} session${count9 === 1 ? "" : "s"}`)),
-      h("div.heat", { role: "img", "aria-label": `Training map: ${count9} sessions in the last 9 weeks` }, cells),
-      h("div.heat-m", monthMarks.map(m => h("span", m)))),
+      h("div.heat", { role: "img", "aria-label": `Training map: ${count9} sessions in the last 9 weeks` }, cells)),
     dayTile,
     h("div.grid2",
       navTile("Week", `${thisWeek} session${thisWeek === 1 ? "" : "s"}`, () => go("week")),

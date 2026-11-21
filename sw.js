@@ -1,7 +1,7 @@
 // Offline support. App files come from the network when it answers within a few seconds,
 // otherwise from the cache, so a new version shows up on the next online open.
 // GitHub API calls always go to the network (the app keeps its own data cache).
-const VERSION = "nhg-1.0.2";
+const VERSION = "nhg-1.0.3";
 const SHELL = ["./", "index.html", "styles.css", "lib.js", "store.js", "app.js", "manifest.webmanifest",
   "icons/icon-192.png", "icons/icon-512.png", "icons/maskable-512.png", "fonts/inter.woff2", "fonts/barlow-600.woff2", "fonts/barlow-700.woff2"];
 const WAIT_MS = 3000;
