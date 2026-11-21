@@ -1,6 +1,6 @@
 "use strict";
 const L = self.GymLib, S = self.Store;
-const APP_VERSION = "1.0.1";
+const APP_VERSION = "1.0.2";
 const $ = (sel, el = document) => el.querySelector(sel);
 
 // h("div.cls#id", {attrs, onclick}, ...children)
@@ -508,6 +508,19 @@ async function saveWorkout() {
   catch (e) { toast({ title: "Saved on this phone", sub: e.status === -1 ? "It'll upload when you're online." : e.message, ok: false }); paintStatus(); }
 }
 
+async function checkForUpdates() {
+  toast({ title: "Checking for updates…", ok: true });
+  try {
+    const r = await navigator.serviceWorker.getRegistration();
+    if (r) {
+      await r.update();
+      const sw = r.installing || r.waiting;
+      if (sw) await new Promise(res => { if (sw.state === "activated") return res(); sw.addEventListener("statechange", () => sw.state === "activated" && res()); setTimeout(res, 8000); });
+    }
+  } catch {}
+  location.reload();
+}
+
 // ---------- Week ----------
 VIEWS.week = () => {
   const wk = L.weekStart(new Date()); const from = L.isoDate(wk); const end = new Date(wk); end.setDate(end.getDate() + 6);
@@ -610,7 +623,7 @@ VIEWS.more = () => {
       ob.length ? h("div.small", `${ob.length} waiting to upload: ${ob.map(o => o.label).join(", ")}`) : h("div.dim.small", "Nothing waiting to upload"),
       h("div.rowx", h("button.ghost", { onclick: () => syncNow() }, "Sync now"), h("button.ghost", { onclick: () => go("connect") }, "Change connection"))),
     h("section.card", h("div.strong", "App"), h("div.dim.small", `Version ${APP_VERSION}. Updates arrive the next time you open the app online.`),
-      h("button.ghost", { onclick: async () => { try { const r = await navigator.serviceWorker.getRegistration(); await r?.update(); } catch {} location.reload(); } }, "Check for updates")),
+      h("button.ghost", { onclick: checkForUpdates }, "Check for updates")),
     tabbar("more"));
 };
 VIEWS.exercises = () => {
@@ -662,6 +675,11 @@ function boot() {
   if (draft()) requestWake();
   if (S.settings()) syncNow({ quiet: false });
   window.addEventListener("online", () => syncNow({ quiet: true }));
-  if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) navigator.serviceWorker.register("sw.js").catch(() => {});
+  if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
+    // When a new version takes over, reload once so its files are used straight away.
+    const hadController = !!navigator.serviceWorker.controller; let reloading = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => { if (hadController && !reloading) { reloading = true; location.reload(); } });
+    navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(r => r.update()).catch(() => {});
+  }
 }
 boot();
