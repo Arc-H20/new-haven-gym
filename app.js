@@ -1,6 +1,6 @@
 "use strict";
 const L = self.GymLib, S = self.Store;
-const APP_VERSION = "1.0.0";
+const APP_VERSION = "1.0.1";
 const $ = (sel, el = document) => el.querySelector(sel);
 
 // h("div.cls#id", {attrs, onclick}, ...children)
@@ -363,8 +363,27 @@ function workoutList(d) {
     topbar(d.routine, `${mins} min · ${doneN} of ${d.order.length} done`,
       h("button.linkbtn", { onclick: () => picker({ title: "Add exercise", exclude: d.order, onPick: name => { const dd = draft(); dd.order.push(name); saveDraft(dd); render(); } }) }, "+ Exercise")),
     h("div.list", rows),
-    h("div.foot", h("button.ghost.wide", { onclick: () => go("finish") }, "Finish workout")),
+    h("div.foot.col", h("button.ghost.wide", { onclick: () => go("finish") }, "Finish workout"),
+      h("button.linkbtn.danger#discard", { onclick: () => askDiscard(d) }, "Discard workout")),
     tabbar("log"));
+}
+// Leave a workout without saving. Nothing is uploaded, so the rotation stays where it was.
+function askDiscard(d) {
+  const sets = Object.values(d.ex).reduce((n, st) => n + st.rows.filter(r => r.done).length, 0);
+  if (!sets) return discardWorkout();
+  const host = $("#sheet-host"); const close = () => host.replaceChildren();
+  host.replaceChildren(h("div.scrim", { onclick: close }), h("div.sheet", { role: "dialog", "aria-label": "Discard workout" },
+    h("div.grab"), h("h2.sheet-t", `Discard ${d.routine}?`),
+    h("div.dim", `The ${sets} ${sets === 1 ? "set" : "sets"} you've logged won't be saved. You can then pick another day and start again.`),
+    h("div.foot.col", h("button.go.danger-go#discard-yes", { onclick: () => { close(); discardWorkout(); } }, "Discard workout"),
+      h("button.ghost.wide", { onclick: close }, "Keep going"))));
+}
+function discardWorkout() {
+  const d = draft(); const routine = d && d.routine;
+  S.setDraft(null); try { wakeLock && wakeLock.release(); } catch {}
+  clearInterval(timerTick); timerTick = null; editMode = false;
+  if (routine) homeSelVal = routine;
+  go("log", null, { replace: true });
 }
 
 // ---------- Exercise logging (option A) ----------

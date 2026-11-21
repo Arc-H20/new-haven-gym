@@ -1,6 +1,6 @@
 // Offline support: the app shell is served from cache, then refreshed in the background.
 // GitHub API calls always go to the network (the app keeps its own data cache).
-const VERSION = "nhg-1.0.0";
+const VERSION = "nhg-1.0.1";
 const SHELL = ["./", "index.html", "styles.css", "lib.js", "store.js", "app.js", "manifest.webmanifest",
   "icons/icon-192.png", "icons/icon-512.png", "icons/maskable-512.png", "fonts/inter.woff2", "fonts/barlow-600.woff2", "fonts/barlow-700.woff2"];
 
